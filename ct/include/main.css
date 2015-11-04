@@ -1,0 +1,79 @@
+BODY
+{
+    COLOR: black;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: small;
+    FONT-STYLE: normal;
+}
+TABLE
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: small;
+}
+H1
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: large;
+}
+.toptitle
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: small;
+    FONT-STYLE: italic;
+    FONT-WEIGHT: normal;
+}
+.title
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: 18pt;
+    FONT-WEIGHT: bold;
+}
+.intro
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: 10pt;
+    FONT-WEIGHT: bold;
+}
+.text
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: small;
+}
+.link
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: small;
+    FONT-WEIGHT: bold;
+}
+I
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+}
+.byline
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: 8pt;
+}
+.subtitle
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: small;
+    FONT-WEIGHT: bold;
+}
+.title2
+{
+    COLOR: #000000;
+    FONT-FAMILY: Arial, sans-serif, Helvetica;
+    FONT-SIZE: medium;
+    FONT-WEIGHT: bold;
+}

@@ -1,0 +1,388 @@
+<%@ LANGUAGE="VBSCRIPT" %>
+<% Option Explicit %>
+<%
+'## Query parameters (all QueryString):
+'##   HBID:    Hearing Body ID
+%>
+<!--#include file="../include/Functions.inc"-->
+<!--#INCLUDE FILE="../include/dbConnection.asp"-->
+<%
+On Error Resume Next
+' On Error Goto 0   ' DEVELOPMENT & DEBUG
+IdentifyUser
+If Not bIsAdm Then
+  Call SeriousError
+End If
+%>
+
+<%
+DIM dbConnect, strHBID, strSQL, rsHB, rsHearingBodies, iCnt
+Dim strHBname, strIsModerated, strModeratorName, strIsAdminGroup, rsModerator
+
+strHBID = Trim(Request.QueryString("HBID"))
+If strHBID = "" Then Call InvalidHBID(strHBID, -10)
+
+SET dbConnect = Server.CreateObject("ADODB.Connection")
+If Err.Number <> 0 Then Call SeriousError
+dbConnect.Open strConnStr
+If Err.Number <> 0 Then Call SeriousError
+
+'## Look up Hearing Body 
+strSQL = "SELECT * FROM HearingBodies Where ID = " & dbText(strHBID)
+' Response.Write "strSQL=" & strSQL & "<br>"    ' DEVELOPMENT & DEBUG
+Set rsHB = dbConnect.Execute(strSQL)
+If Err.Number <> 0 Then Call SeriousError
+If rsHB.EOF Then Call InvalidHBID(strHBID, -20)
+' Response.Write "rsHB(""IsModerated"")=" & rsHB("IsModerated") & "<br>"        ' DEVELOPMENT & DEBUG
+If rsHB("IsModerated") Then
+  strIsModerated = "Yes"
+Else
+  strIsModerated = "No"
+End If
+strModeratorName = ""
+'If rsHB("Moderator_ID") <> "" Then
+'  Set rsModerator = dbConnect.Execute("select NameUser From Users Where UserID = " & dbText(rsHB("Moderator_ID")))
+'  If Err.Number <> 0 Then Call SeriousError
+'  If Not rsModerator.EOF Then strModeratorName = rsModerator("NameUser") 
+'  Set rsModerator = Nothing
+'End If
+If rsHB("Moderators_Email") <> "" Then strModeratorName = Trim(rsHB("Moderators_Email"))
+If rsHB("IsAdministratorGroup")  = 1 Then
+  strIsAdminGroup = "Yes"
+Else
+  strIsAdminGroup = "No"
+End If
+
+'## Get list of all Hearing Bodies
+strSQL = "SELECT ID, Abbrev, NameHB FROM HearingBodies ORDER BY NameHB"         
+Set rsHearingBodies = dbConnect.Execute(strSQL)
+If Err.Number <> 0 Then Call SeriousError
+%>
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<head>
+<title><%=strAppTitle%> - Update Hearing Body</title>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<SCRIPT TYPE="text/javascript" LANGUAGE="javascript">
+<!--
+function fnSubmit(frmForm) {
+//  FDK_Validate('frmUpdateHB',true,false,'Missing or invalid form data\n\n');   // DEVELOPMENT & DEBUG - Don't autosubmit
+  FDK_Validate('frmUpdateHB',true,true,'Missing or invalid form data\n\n');  // 3rd param is "AutoSubmit"
+  return document.MM_returnValue;   // DEVELOPMENT & DEBUG
+  }
+
+function initValidateArray() {
+  FDK_AddAlphaNumericValidation('frmUpdateHB','document.frmUpdateHB.txtHearingBody',true,true,'\'Please enter the name of the Hearing Body\'');
+  FDK_AddAlphaNumericValidation('frmUpdateHB','document.frmUpdateHB.txtHBAbbrev',false,true,'"Please enter the Hearing Body\'s abbreviation"');
+  }
+
+function FDK_Validate(FormName, stopOnFailure, AutoSubmit, ErrorHeader)
+{
+ var theFormName = FormName;
+ var theElementName = "";
+ if (theFormName.indexOf(".")>=0)  
+ {
+   theElementName = theFormName.substring(theFormName.indexOf(".")+1);
+   theFormName = theFormName.substring(0,theFormName.indexOf("."));
+ }
+ var ValidationCheck = eval("document."+theFormName+".ValidateForm");
+ if (ValidationCheck)  
+ {
+  var theNameArray = eval(theFormName+"NameArray");
+  var theValidationArray = eval(theFormName+"ValidationArray");
+  var theFocusArray = eval(theFormName+"FocusArray");
+  var ErrorMsg = "";
+  var FocusSet = false;
+  var i;
+  var msg;
+    
+ 
+        // Go through the Validate Array that may or may not exist
+        // and call the Validate function for all elements that have one.
+  if (String(theNameArray)!="undefined")
+  {
+   for (i = 0; i < theNameArray.length; i ++)
+   {
+    msg="";
+    if (theNameArray[i].name == theElementName || theElementName == "")
+    {
+      msg = eval(theValidationArray[i]);
+    }
+    if (msg != "")
+    {
+     ErrorMsg += "\n"+msg;                   
+     if (stopOnFailure == "1") 
+     {
+       if (theFocusArray[i] && !FocusSet)  
+      {
+       FocusSet=true;
+       theNameArray[i].focus();
+      }
+      alert(ErrorHeader+ErrorMsg);
+      document.MM_returnValue = false;
+      break;
+     }
+     else  
+     {
+      if (theFocusArray[i] && !FocusSet)  
+      {
+       FocusSet=true;
+       theNameArray[i].focus();
+      }
+     }
+    }
+   }
+  }
+  if (ErrorMsg!="" && stopOnFailure != "1") 
+  {
+   alert(ErrorHeader+ErrorMsg);
+  }
+  document.MM_returnValue = (ErrorMsg==""); 
+  if (document.MM_returnValue && AutoSubmit)  
+  {
+   eval("document."+FormName+".submit()")
+  }
+ }
+}
+
+function FDK_StripChars(theFilter,theString)
+{
+	var strOut,i,curChar
+
+	strOut = ""
+	for (i=0;i < theString.length; i++)
+	{		
+		curChar = theString.charAt(i)
+		if (theFilter.indexOf(curChar) < 0)	// if it's not in the filter, send it thru
+			strOut += curChar		
+	}	
+	return strOut
+}
+
+function FDK_AllInRange(x,y,theString)
+{
+	var i, curChar
+	
+	for (i=0; i < theString.length; i++)
+	{
+		curChar = theString.charAt(i)
+		if (curChar < x || curChar > y) //the char is not in range
+			return false
+	}
+	return true
+}
+
+function FDK_reformat(s)
+{
+    var arg;
+    var sPos = 0;
+    var resultString = "";
+
+    for (var i = 1; i < FDK_reformat.arguments.length; i++) {
+       arg = FDK_reformat.arguments[i];
+       if (i % 2 == 1) 
+           resultString += arg;
+       else 
+       {
+           resultString += s.substring(sPos, sPos + arg);
+           sPos += arg;
+       }
+    }
+    return resultString;
+}
+
+function FDK_AddToValidateArray(FormName,FormElement,Validation,SetFocus)
+{
+    var TheRoot=eval("document."+FormName);
+ 
+    if (!TheRoot.ValidateForm) 
+    {
+        TheRoot.ValidateForm = true;
+        eval(FormName+"NameArray = new Array()")
+        eval(FormName+"ValidationArray = new Array()")
+        eval(FormName+"FocusArray = new Array()")
+    }
+    var ArrayIndex = eval(FormName+"NameArray.length");
+    eval(FormName+"NameArray[ArrayIndex] = FormElement");
+    eval(FormName+"ValidationArray[ArrayIndex] = Validation");
+    eval(FormName+"FocusArray[ArrayIndex] = SetFocus");
+ 
+}
+
+function FDK_ValidateAlphaNum(FormElement,Required,ErrorMsg)
+{
+	var msg = "";
+	var i, m, s, firstNonWhite
+	var theString = FormElement.value;
+ 	var msgInvalid = ErrorMsg;
+
+	if (FDK_StripChars(" ",theString).length == 0)	     {
+		if (!Required)       {
+          return "";		
+        }
+		else       {
+          return msgInvalid;
+        }
+    }
+	//Strip spaces off of the sides of the string
+ 	theString = FDK_Trim(theString);
+
+    for (var n=0; n<theString.length; n++)     {
+      theChar = theString.substring(n,n+1);
+      if (!FDK_AllInRange("0","9",theChar) && !FDK_AllInRange("A","Z",theChar.toUpperCase()) && !(theChar == " ") && !OtherValidChars(theChar.toUpperCase()))     {
+        return msgInvalid;
+      }
+    }
+
+    return "";
+}
+
+function OtherValidChars(cChar) {
+  return (cChar == "'" || cChar == '.' || cChar == '@' || cChar == '-' || cChar == '_' || cChar == 'Ü' || cChar == 'Æ' || cChar == 'Ä' || cChar == 'Ø' || cChar == 'Å' || cChar == 'Ä' || cChar == 'Ö');
+  }
+
+function FDK_Trim(theString)
+{
+ var i,firstNonWhite
+
+ if (FDK_StripChars(" \n\r\t",theString).length == 0 ) return ""
+
+	i = -1
+	while (1)
+	{
+		i++
+		if (theString.charAt(i) != " ")
+			break	
+	}
+	firstNonWhite = i
+	//Count the spaces at the end
+	i = theString.length
+	while (1)
+	{
+		i--
+		if (theString.charAt(i) != " ")
+			break	
+	}	
+
+	return theString.substring(firstNonWhite,i + 1)
+
+}
+
+function FDK_AddAlphaNumericValidation(FormName,FormElementName,Required,SetFocus,ErrorMsg)  {
+  var ValString = "FDK_ValidateAlphaNum("+FormElementName+","+Required+"," + ErrorMsg + ")"
+  FDK_AddToValidateArray(FormName,eval(FormElementName),ValString,SetFocus)
+}
+
+//-->
+</SCRIPT>
+</head>
+
+<body style="max-width: 1000px" bgcolor="#FFFFFF" topmargin="0" leftmargin="0" onLoad="initValidateArray()">
+<!--#include file="../include/topright.asp"-->
+
+<table border="0" width="700">
+  <tr>
+    <td width="100%" bgcolor="#12b1ee"><strong><font face="Arial" color="#FFFFFF">Update Hearing Body</font></strong></td>
+  </tr>
+</table>
+<form action="UpdateHearingBodyAction.asp" method="post" name="frmUpdateHB">
+      <INPUT TYPE="Hidden" NAME="txtHBID" VALUE="<%=Server.HTMLencode(Trim(rsHB("ID")))%>">
+      <table border="0" style="font-family: Arial; font-size: 10pt">
+      <tr>
+        <td align="right"><font color="#FF0000" size="-1"><b>Hearing Body</b></font></td>
+        <td><input name="txtHearingBody" type="text" size="60" value="<%=Server.HTMLEncode(Trim(rsHB("NameHB")))%>"></td>
+      </tr>
+      <tr>
+        <td align="right"><font size="-1"><b>Abbreviation</b></font></td>
+        <td><input name="txtHBAbbrev" type="text" size="60" value="<%=Server.HTMLEncode(Trim(rsHB("Abbrev")))%>"></td></tr>
+<!--
+      <tr>
+        <td align="right"><font size="-1"><b>Moderated</b></font></td>
+        <td><font size="-1"><%=Server.HTMLEncode(strIsModerated)%></font></td>
+      </tr>
+-->
+<!--
+      <tr>
+        <td align="right"><font size="-1"><b>Moderator(s)</b></font></td>
+        <td><font size="-1"><%=Server.HTMLEncode(strModeratorName)%></font></td>
+      </tr>
+-->
+      <tr>
+        <td align="right"><font size="-1"><b>Moderator Email address(es)</b></font></td>
+        <td>
+           <input name="txtModeratorsEmail" type="text" size="60" value="<%=Server.HTMLEncode(strModeratorName)%>">
+           &nbsp;&nbsp;Separate with &#59;
+        </td>
+      </tr>
+      <tr>
+        <td align="right"><font size="-1"><b>Admin. Group</b></font></td>
+        <td><font size="-1"><%=Server.HTMLEncode(strIsAdminGroup)%></font></td>
+      </tr>
+      <tr><td colspan="2" align="center"><input name="btnUpdateHearingBody" type="button" value="Update Hearing Body" onClick="fnSubmit(this.form);"></td></tr>
+    </table>
+</form>
+
+<table border="0" style="font-family: Arial; font-size: 10pt">
+  <tr>
+    <td>
+      <font size="-1"><B>Existing&nbsp;Hearing&nbsp;Bodies</B></font>
+    </td>
+  </tr>
+
+<% 
+While Not rsHearingBodies.EOF
+  strHBname = Trim(rsHearingBodies("NameHB"))
+  If Trim(rsHearingBodies("Abbrev")) <> "" Then strHBname = strHBname + " (" + Trim(rsHearingBodies("Abbrev")) + ")"
+%>
+  <tr>
+    <td><%=strHBname%></td>
+  </tr>
+<%
+rsHearingBodies.MoveNext
+Wend
+%>
+    </td>
+  </tr>
+</table>
+</body>
+</HTML>
+<%
+   '***********************
+   '**   Close connection.   **
+   '***********************
+   Set rsHB = Nothing
+   Set rsHearingBodies = Nothing
+   If IsObject(dbConnect) Then dbConnect.Close
+   SET dbConnect = Nothing
+   Response.End
+%>
+<%
+Sub InvalidHBID (strHBID, iCnt)
+%>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+<HEAD>
+  <title><%=strAppTitle%> - Update Hearing Body</title>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+</HEAD>
+
+<body style="max-width: 1000px" bgcolor="#FFFFFF" topmargin="0" leftmargin="0">
+<!--#include file="../include/topright.asp"-->
+<table border="0" width="700">
+  <tr>
+    <td width="100%" bgcolor="#12b1ee"><strong><font face="Arial" color="#FFFFFF">Update Hearing Body - Error</font></strong></td>
+  </tr>
+</table>
+<P><font face="arial">Could not find Hearing Body <%=Server.HTMLencode(strHBID)%></font></P>
+<P>iCnt=<%=iCnt%></P>
+</body>
+</HTML>
+<%
+Set rsHB = Nothing
+Set rsHearingBodies = Nothing
+If IsObject(dbConnect) Then dbConnect.Close
+Set dbConnect = Nothing
+Response.End
+End Sub
+%>
