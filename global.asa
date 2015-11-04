@@ -1,0 +1,52 @@
+<SCRIPT LANGUAGE=VBScript RUNAT=Server>
+
+' strDocBuffer: Specify file system location to the temporary document buffer folder
+strDocBuffer = "D:\Inetpub\wwwroot\Site01\RuleHearing\ct\docbuf\"
+
+Sub Application_OnStart
+  ' Remove all stray documents from the copy buffer
+  EmptyDocBuf
+End Sub
+
+Sub Session_OnStart
+  EmptyUsersDocBuf(Request.Cookies("UID"))  ' Works only when user has checked "Remember me" in previous session, thereby retaining the cookie
+End Sub
+
+Sub Session_OnEnd
+  EmptyUsersDocBuf(Session("UID")) ' Doesn't seem to work /"2004-08-25. Has session variable vanished already before "Session_OnEnd"?
+End Sub
+
+Sub EmptyDocBuf
+  Dim fso, oFolder, folders, folder
+  set fso = Server.CreateObject("Scripting.FileSystemObject")
+  set oFolder = fso.GetFolder(strDocBuffer)
+  set files = oFolder.Files
+  For Each file in files
+    file.Delete True
+  Next
+  Set subfolders = oFolder.Subfolders
+  For Each folder in subfolders
+      folder.Delete(true)
+   Next
+  Set subfolders = Nothing
+  Set oFolder = Nothing
+  Set fso = Nothing
+End Sub
+
+Sub EmptyUsersDocBuf(strUID)
+  ' Remove this user's document copies from the copy buffer
+  If strUID <> "" Then
+    Application("VisitingUsers") = Application("VisitingUsers") & strUID & ";"
+    set fso = Server.CreateObject("Scripting.FileSystemObject")
+    If fso.FolderExists(strDocBuffer & strUID) Then 
+      set files = fso.GetFolder(strDocBuffer & strUID).Files
+      For Each file in files
+        file.Delete True
+      Next
+      fso.DeleteFolder(strDocBuffer & strUID)
+    End If
+  End If
+End Sub
+
+</SCRIPT>
+
