@@ -23,6 +23,7 @@ DIM oMailConfig, cdo, strEmailBody, strEmailFrom, strEmailTo, strEmailCc, strEma
 Dim strEmailSubject, iRPNo, strWarning
 Dim arrEmailBcc, rcp, i, iFirstInBatch, iBatchSize, iNoOfBccRecipients, iUpperInBatch
 Dim strRecipientIndex
+Dim strSelectedHBs
 
 On Error Resume Next
 ' On Error Goto 0     ' DEVELOPMENT & DEBUG
@@ -45,6 +46,9 @@ strEmailBcc  = Trim(Request.Form("txtBcc"))
 arrEmailBcc = split(strEmailBcc, "; ")
 
 strEmailBody = Trim(Request.Form("txtEmailBody"))
+strSelectedHBs = Server.HTMLEncode(Trim(Request.Form("txtSelectedHBs")))
+strSelectedHBs = Replace(strSelectedHBs, "&lt;br&gt;", "<br>")
+
 'strEmailBody = Replace(strEmailBody, Chr(10), "<br>")
 'strEmailBody = Replace(strEmailBody, Chr(13), "")
 'strEmailBody = Replace(strEmailBody, " ", "&nbsp;")
@@ -205,7 +209,8 @@ Next  ' End of "For iFirstInBatch = LBound(arrEmailBcc) To UBound(arrEmailBcc) S
 
 set oMailConfig = Nothing
 %>
-
+<b>Selected Hearing bodies:</b>
+<%=strSelectedHBs%>
 </body>
 </html>
 
