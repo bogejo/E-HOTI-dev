@@ -19,7 +19,7 @@
 <%
 DIM dbConnect, strRPNo, strSQL_RP, rsRP, cdo, strEmailBody, iSpaces, iTab, rsHB, strSalutation
 Dim strEmailSubject, iRPNo, strWarning, strRPrec, iRP, strSQLFROM, strSQLWHEREcommon
-Dim strSQL_Addresses, strChosenHBs, rsRecipients, strRecipient, strAllRecipients
+Dim strSQL_Addresses, strChosenHBs, rsRecipients, strRecipient, strAllRecipients, strSelectedHBs
 
 On Error Resume Next
 ' On Error Goto 0     ' DEVELOPMENT & DEBUG
@@ -50,7 +50,7 @@ strSQLFROM = "FROM HearingBodies INNER JOIN " &_
                      "Users ON HB_Membership.UserID = Users.UserID "
 
 
-If strChosenHBs = "" Then    ' "All readers in all committees" was selected
+If strChosenHBs = "" Then    ' "All readers in all committees" was selected   
    strSQL_Addresses = "SELECT Moderators_Email As eMailAddress From HearingBodies WHERE IsModerated = 1"
    rsRecipients.Open strSQL_Addresses, dbConnect, 3         ' Cursor adOpenStatic = 3; facilitates RecordCount and MovePrevious/Next
    If Err.Number <> 0 Then Call SeriousError
@@ -77,7 +77,8 @@ If strChosenHBs = "" Then    ' "All readers in all committees" was selected
       strAllRecipients = strAllRecipients & rsRecipients("eMailAddress") & "; "
       rsRecipients.MoveNext
    Wend
-   strSalutation = "all members in all committees."
+   strSalutation = "all members in all committees."  ' used in email body
+   strSelectedHBs = "<br>All hearing bodies"             ' used to list hearingbodies in preview screen under email.
 
 Else  ' A subset of Hearing Bodies was selected
    strChosenHBs = Left(strChosenHBs, Len(strChosenHBs)-1)    ' Chop the trailing ','
@@ -110,12 +111,13 @@ Else  ' A subset of Hearing Bodies was selected
       strAllRecipients = strAllRecipients & rsRecipients("eMailAddress") & "; "
       rsRecipients.MoveNext
    Wend
-   strSalutation = "members of:"
    Set rsHB = dbConnect.Execute("SELECT NameHB from HearingBodies WHERE ID IN (" & strChosenHBs & ") ORDER BY NameHB")
    While Not rsHB.EOF
-      strSalutation = strSalutation & Chr(10) & rsHB("NameHB")
+      strSalutation = strSalutation & Chr(10) & rsHB("NameHB")	  
       rsHB.MoveNext
-   Wend
+   Wend   
+   strSelectedHBs = Replace(strSalutation, Chr(10), "<br>")
+   strSalutation = "members of:" & strSalutation
 End If
 rsRecipients.Close
 
@@ -267,8 +269,11 @@ Wend
    </td></tr>
    
   </tbody>
-  </table>
+  </table>  
+  <input type="hidden" name="txtSelectedHBs" value="<%=strSelectedHBs%>">
 </form>
+<b>Selected Hearing bodies:</b>
+<%=strSelectedHBs%>
 
 </body>
 </html>
