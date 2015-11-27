@@ -24,6 +24,10 @@ Dim strEmailSubject, iRPNo, strWarning
 Dim arrEmailBcc, rcp, i, iFirstInBatch, iBatchSize, iNoOfBccRecipients, iUpperInBatch
 Dim strRecipientIndex
 Dim strSelectedHBs
+Dim rxEmailCheck
+Dim strThisEmail
+Dim bThisEmailValid
+Dim strNotValidEmails
 
 On Error Resume Next
 ' On Error Goto 0     ' DEVELOPMENT & DEBUG
@@ -37,17 +41,26 @@ Response.Buffer = False  ' Allows output of "huge" lists
 %>
 <%
 strWarning = ""
+strNotValidEmails = "" 
 
 strEmailFrom = Trim(Request.Form("txtFrom"))
 strEmailTo   = Trim(Request.Form("txtTo"))
 strEmailCc   = Trim(Request.Form("txtCc"))
 strEmailBcc  = Trim(Request.Form("txtBcc"))
 
-arrEmailBcc = split(strEmailBcc, "; ")
+arrEmailBcc = split(strEmailBcc, "; ") ' This will leave the ; as part of the last email in the array, because of the trim when requesting.
 
 strEmailBody = Trim(Request.Form("txtEmailBody"))
 strSelectedHBs = Server.HTMLEncode(Trim(Request.Form("txtSelectedHBs")))
 strSelectedHBs = Replace(strSelectedHBs, "&lt;br&gt;", "<br>")
+
+'Create and configure the Regular Expression Object needed for Validating all email addresses.
+Set rxEmailCheck = New RegExp
+With rxEmailCheck
+	.Pattern = "^[_A-Za-z0-9-\+]+(\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\.[A-Za-z0-9]+)*(\.[A-Za-z]{2,})$"
+	.Global = False
+	.IgnoreCase = False
+End With
 
 'strEmailBody = Replace(strEmailBody, Chr(10), "<br>")
 'strEmailBody = Replace(strEmailBody, Chr(13), "")
@@ -86,6 +99,15 @@ If Err.Number <> 0 Then Call SeriousError
 <body  style="max-width: 1000px" bgcolor="#FFFFFF">
 <!--#include file="../include/topright.asp"-->
 
+
+<br>
+<font face="Arial">
+<strong>Important:</strong> Always check at the bottom of this page if any emails were identified as invalid.<br>
+Report any invalid email addresses to EHOTI support.
+</font>
+<br><br>
+
+
 <%
 
 iNoOfBccRecipients = UBound(arrEmailBcc) + 1
@@ -112,7 +134,14 @@ For iFirstInBatch = LBound(arrEmailBcc) To UBound(arrEmailBcc) Step iBatchSize
 
    For i = iFirstInBatch to iUpperInBatch
      ' Response.Write "arrEmailBcc(" & i & ")=" & arrEmailBcc(i) & "<br>"        ' DEVELOPMENT & DEBUG
-     strEmailBcc = strEmailBcc & arrEmailBcc(i) & "; "
+     strThisEmail = arrEmailBcc(i)
+	 strThisEmail = Replace(strThisEmail, ";", "") ' Remove the ; from the last email in the list. Will actually remove it from all emails, but only the last one should contain ;.
+     bThisEmailValid = rxEmailCheck.Test(strThisEmail) 'Using RegEx to check if email is Valid
+     If bThisEmailValid Then
+       strEmailBcc = strEmailBcc & strThisEmail & "; " 'Only send to valid email addresses.
+     Else
+       strNotValidEmails = strNotValidEmails & "<br>" & strThisEmail
+     End If
    Next
 
    strRecipientIndex = Chr(10) & Chr(13) & Chr(10) & Chr(13) & iFirstInBatch + 1 & "-" & iUpperInBatch + 1 & "(" & iNoOfBccRecipients & ")"
@@ -206,11 +235,23 @@ For iFirstInBatch = LBound(arrEmailBcc) To UBound(arrEmailBcc) Step iBatchSize
    Set cdo = Nothing
 
 Next  ' End of "For iFirstInBatch = LBound(arrEmailBcc) To UBound(arrEmailBcc) Step iBatchSize"
-
+Set rxEmailCheck = Nothing
 set oMailConfig = Nothing
+
+If strNotValidEmails = "" Then
+  strNotValidEmails = "<br>All email addresses are valid :-)"
+Else
+  strNotValidEmails = "<font color=""red"">" & strNotValidEmails & "</font>"
+End If
+
 %>
 <b>Selected Hearing bodies:</b>
 <%=strSelectedHBs%>
+<br><br>
+<b>Invalid email addresses:</b>
+<%=strNotValidEmails%>
+<br>
+<br>
 </body>
 </html>
 
