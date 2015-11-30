@@ -100,12 +100,11 @@ If Err.Number <> 0 Then Call SeriousError
 <!--#include file="../include/topright.asp"-->
 
 
-<br>
+<p>
 <font face="Arial">
-<strong>Important:</strong> Always check at the bottom of this page if any emails were identified as invalid.<br>
-Report any invalid email addresses to EHOTI support.
-</font>
-<br><br>
+<strong>Important:</strong> Always check at the <a href="#invalidEmail">bottom of this page</a> whether any email address was identified as invalid.<br>
+Such members with invalid email addresses (=UserIDs) will have to be re-registered in E-HOTI with valid email addresses, and the invalid member record must be deleted.</font>
+</p>
 
 
 <%
@@ -129,7 +128,7 @@ For iFirstInBatch = LBound(arrEmailBcc) To UBound(arrEmailBcc) Step iBatchSize
    End If
 
    If iUpperInBatch = UBound(arrEmailBcc) Then
-'      strEmailBcc = strEmailBcc & "; Sille.Grjotheim@dnvgl.com; Helen.Moller@dnvgl.com;"  ' By request DNV-TSK-2290039
+'     strEmailBcc = strEmailBcc & "; Sille.Grjotheim@dnvgl.com; Helen.Moller@dnvgl.com;"  ' By request DNV-TSK-2290039
    End If
 
    For i = iFirstInBatch to iUpperInBatch
@@ -239,19 +238,20 @@ Set rxEmailCheck = Nothing
 set oMailConfig = Nothing
 
 If strNotValidEmails = "" Then
-  strNotValidEmails = "<br>All email addresses are valid :-)"
+  strNotValidEmails = "<br>All email addresses are valid"
 Else
   strNotValidEmails = "<font color=""red"">" & strNotValidEmails & "</font>"
 End If
 
 %>
+<p>
 <b>Selected Hearing bodies:</b>
 <%=strSelectedHBs%>
-<br><br>
-<b>Invalid email addresses:</b>
+</p>
+<p><a name="invalidEmail"></a>
+<b>Invalid and ignored email addresses:</b>
 <%=strNotValidEmails%>
-<br>
-<br>
+</p>
 </body>
 </html>
 

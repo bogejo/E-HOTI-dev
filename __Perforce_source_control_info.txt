@@ -1,0 +1,3 @@
+This folder and its contents is under Perforce source control
+Deposit:  //ITS/Projects/E-HOTI/dev
+
